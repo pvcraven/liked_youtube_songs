@@ -1,11 +1,22 @@
+"""
+This program will take your
+"""
 import json
-from ytmusicapi import YTMusic
+from dataclasses import dataclass
+from typing import List
 
+from ytmusicapi import YTMusic
 from openpyxl import Workbook
 
 
-def main():
+@dataclass
+class Song:
+    title: str
+    artists: List
 
+
+def main():
+    """ Main method where the magic happens. """
     try:
         print("Authorizing...")
         ytmusic = YTMusic("oauth.json")
@@ -14,21 +25,28 @@ def main():
         return
 
     print("Getting liked songs...")
-    songs = ytmusic.get_liked_songs(2000)
+    song_query_result = ytmusic.get_liked_songs(2000)
 
+    song_list = []
+    for track in song_query_result['tracks']:
+        artist_list = []
+        for artists in track['artists']:
+            artist_list.append(artists['name'])
+            song = Song(title=track['title'], artists=artist_list)
+            song_list.append(song)
+
+    sorted_song_list = sorted(song_list, key=lambda x: x.artists[0].lower() + x.title)
     # print(songs)
     # print(json.dumps(songs, indent=4))
     print("Writing out spreadsheet...")
 
     workbook = Workbook()
     work_sheet = workbook.active
+    work_sheet.append(['Title', 'Artist 1', 'Artist 2', 'Artist 3'])
 
-    for track in songs['tracks']:
-        row = []
-        title = track['title']
-        row.append(title)
-        for artists in track['artists']:
-            artist = artists['name']
+    for song in sorted_song_list:
+        row = [song.title]
+        for artist in song.artists:
             row.append(artist)
 
         work_sheet.append(row)
