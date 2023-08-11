@@ -32,8 +32,8 @@ def main():
         artist_list = []
         for artists in track['artists']:
             artist_list.append(artists['name'])
-            song = Song(title=track['title'], artists=artist_list)
-            song_list.append(song)
+        song = Song(title=track['title'], artists=artist_list)
+        song_list.append(song)
 
     sorted_song_list = sorted(song_list, key=lambda x: x.artists[0].lower() + x.title)
     # print(songs)
