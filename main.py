@@ -7,12 +7,20 @@ from typing import List
 
 from ytmusicapi import YTMusic
 from openpyxl import Workbook
+from openpyxl import utils
 
 
 @dataclass
 class Song:
     title: str
     artists: List
+    hyperlink: str
+
+
+def as_text(value):
+    if value is None:
+        return ""
+    return str(value)
 
 
 def main():
@@ -32,8 +40,8 @@ def main():
         artist_list = []
         for artists in track['artists']:
             artist_list.append(artists['name'])
-            song = Song(title=track['title'], artists=artist_list)
-            song_list.append(song)
+        song = Song(title=track['title'], artists=artist_list, hyperlink=track['videoId'])
+        song_list.append(song)
 
     sorted_song_list = sorted(song_list, key=lambda x: x.artists[0].lower() + x.title)
     # print(songs)
@@ -50,6 +58,14 @@ def main():
             row.append(artist)
 
         work_sheet.append(row)
+        last_row = len(work_sheet['A'])
+        cell = work_sheet.cell(last_row, 1)
+        cell.hyperlink = f"https://music.youtube.com/watch?v={song.hyperlink}"
+
+    # Set column width
+    for column_cells in work_sheet.columns:
+        length = max(len(as_text(cell.value)) for cell in column_cells)
+        work_sheet.column_dimensions[utils.get_column_letter(column_cells[0].column)].width = length
 
     workbook.save("liked_songs.xlsx")
     print("Finished. Results in liked_songs.xlsx")
