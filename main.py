@@ -7,6 +7,7 @@ from typing import List
 
 from ytmusicapi import YTMusic
 from openpyxl import Workbook
+import re
 from openpyxl import utils
 
 
@@ -36,11 +37,33 @@ def main():
     song_query_result = ytmusic.get_liked_songs(2000)
 
     song_list = []
+    possible_artist_list = []
+    with open('valid_artists.txt') as f:
+        valid_artist_list = f.read().splitlines()
+    title_re = re.compile('(^[^\(-]*) - (.*)$')
     for track in song_query_result['tracks']:
         artist_list = []
         for artists in track['artists']:
             artist_list.append(artists['name'])
-        song = Song(title=track['title'], artists=artist_list, hyperlink=track['videoId'])
+        title = track['title']
+        re_match = title_re.match(title)
+        if re_match and re_match.group(1).lower() == artist_list[0].lower():
+            # Fix if the title has the artist, which is the same as the artist that's already listed.
+            title = re_match.group(2)
+            print(f"Removed duplicate artist {artist_list[0]} from title.")
+        elif re_match and re_match.group(1) in valid_artist_list:
+            title = re_match.group(2)
+            artist_list.insert(0, re_match.group(1))
+            print(f"Fix for artist {re_match.group(1)}")
+        elif re_match:
+            print(title)
+            print(f"Original Artist: {artist_list}")
+            print(f"Artist:          {re_match.group(1)}")
+            print(f"Song:            {re_match.group(2)}")
+            possible_artist_list.append(re_match.group(1))
+            print()
+
+        song = Song(title=title, artists=artist_list, hyperlink=track['videoId'])
         song_list.append(song)
 
     sorted_song_list = sorted(song_list, key=lambda x: x.artists[0].lower() + x.title)
@@ -69,6 +92,13 @@ def main():
 
     workbook.save("liked_songs.xlsx")
     print("Finished. Results in liked_songs.xlsx")
+
+    print(possible_artist_list)
+    possible_artist_list = set(possible_artist_list)
+    possible_artist_list = list(possible_artist_list)
+    possible_artist_list.sort()
+    for artist in possible_artist_list:
+        print(artist)
 
 
 main()
